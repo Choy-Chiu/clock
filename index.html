@@ -3,161 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>進階互動教學時鐘</title>
+    <title>互動教學時鐘 - 手動確認版</title>
     <style>
-        body { display: flex; flex-direction: column; align-items: center; font-family: 'Microsoft JhengHei', sans-serif; background: #fffaf0; touch-action: none; }
-        #target-time { font-size: 32px; color: #d35400; margin-top: 20px; font-weight: bold; background: #fff; padding: 10px 20px; border-radius: 15px; border: 3px solid #f39c12; }
-        #clock-container { width: 350px; height: 350px; margin-top: 30px; position: relative; }
-        svg { width: 100%; height: 100%; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+        body { display: flex; flex-direction: column; align-items: center; font-family: 'Microsoft JhengHei', sans-serif; background: #fdfaf0; touch-action: none; margin: 0; padding: 20px; }
+        #target-time { font-size: 32px; color: #d35400; margin-bottom: 10px; font-weight: bold; background: #fff; padding: 15px 35px; border-radius: 50px; border: 3px solid #f39c12; box-shadow: 0 4px 0 #e67e22; }
+        #clock-container { width: 380px; height: 380px; position: relative; }
+        svg { width: 100%; height: 100%; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.15)); }
+        
+        .minute-marker-all { font-size: 2.5px; fill: #95a5a6; }
+        .minute-marker-5 { font-size: 3.5px; fill: #e67e22; font-weight: bold; }
+        .hour-marker { font-size: 8px; fill: #2c3e50; font-weight: bold; }
+        
         .hand { stroke-linecap: round; cursor: pointer; }
-        .minute-marker { font-size: 3px; fill: #7f8c8d; font-weight: bold; }
-        .hour-marker { font-size: 7px; fill: #2c3e50; font-weight: bold; }
-        #feedback { margin-top: 20px; font-size: 24px; font-weight: bold; height: 1.5em; }
-        button { margin-top: 20px; padding: 12px 25px; font-size: 18px; border-radius: 10px; background: #3498db; color: white; border: none; cursor: pointer; }
+        #feedback { margin-top: 15px; font-size: 22px; font-weight: bold; height: 1.5em; text-align: center; }
+        
+        .button-group { display: flex; gap: 10px; margin-top: 20px; }
+        .btn { padding: 15px 30px; font-size: 20px; border-radius: 12px; border: none; cursor: pointer; color: white; transition: 0.2s; }
+        .btn-check { background: #27ae60; box-shadow: 0 4px 0 #219150; }
+        .btn-check:active { transform: translateY(2px); box-shadow: 0 2px 0 #219150; }
+        .btn-next { background: #3498db; box-shadow: 0 4px 0 #2980b9; }
+        .btn-next:active { transform: translateY(2px); box-shadow: 0 2px 0 #2980b9; }
     </style>
 </head>
 <body>
 
-    <div id="target-time">請調整到：12:00</div>
+    <div id="target-time">載入中...</div>
     
     <div id="clock-container">
         <svg id="clock-svg" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="48" fill="white" stroke="#333" stroke-width="1"/>
-            
+            <circle cx="50" cy="50" r="48" fill="white" stroke="#333" stroke-width="0.5"/>
             <g id="clock-face"></g>
-
-            <line id="hour-hand" x1="50" y1="50" x2="50" y2="30" stroke="#2c3e50" stroke-width="3.5" class="hand" />
-            <line id="minute-hand" x1="50" y1="50" x2="50" y2="15" stroke="#3498db" stroke-width="2" class="hand" />
-            
-            <circle cx="50" cy="50" r="2.5" fill="#e74c3c"/>
+            <line id="hour-hand" x1="50" y1="50" x2="50" y2="30" stroke="#2c3e50" stroke-width="3" class="hand" />
+            <line id="minute-hand" x1="50" y1="50" x2="50" y2="18" stroke="#3498db" stroke-width="1.5" class="hand" />
+            <circle cx="50" cy="50" r="2" fill="#e74c3c"/>
         </svg>
     </div>
 
-    <div id="feedback"></div>
-    <button onclick="generateTask()">換一個題目</button>
+    <div id="feedback">請調整時針與分針</div>
+
+    <div class="button-group">
+        <button class="btn btn-check" onclick="manualCheck()">我調整好了！</button>
+        <button class="btn btn-next" onclick="generateTask()">換下一題</button>
+    </div>
 
     <script>
-const clockFace = document.getElementById('clock-face');
-const hourHand = document.getElementById('hour-hand');
-const minuteHand = document.getElementById('minute-hand');
-const feedback = document.getElementById('feedback');
-
-let currentH = 12; // 紀錄目前的小時
-let currentM = 0;  // 紀錄目前的分鐘
-let targetTotalMinutes = 720;
-
-// 初始化鐘面 (保持不變)
-function initClockFace() {
-    clockFace.innerHTML = ''; // 清空
-    for (let i = 1; i <= 60; i++) {
-        const angle = (i * 6) * (Math.PI / 180);
-        const x = 50 + 44 * Math.sin(angle);
-        const y = 50 - 44 * Math.cos(angle);
-        if (i % 5 === 0) {
-            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            text.setAttribute("x", x);
-            text.setAttribute("y", y + 1);
-            text.setAttribute("text-anchor", "middle");
-            text.setAttribute("class", "minute-marker");
-            text.textContent = i;
-            clockFace.appendChild(text);
-        }
-    }
-    for (let i = 1; i <= 12; i++) {
-        const angle = (i * 30) * (Math.PI / 180);
-        const x = 50 + 35 * Math.sin(angle);
-        const y = 50 - 35 * Math.cos(angle);
-        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        text.setAttribute("x", x);
-        text.setAttribute("y", y + 2.5);
-        text.setAttribute("text-anchor", "middle");
-        text.setAttribute("class", "hour-marker");
-        text.textContent = i;
-        clockFace.appendChild(text);
-    }
-}
-
-// 更新畫面
-function updateClockDisplay() {
-    const mAngle = currentM * 6;
-    // 時針角度 = (小時 * 30度) + (分鐘 * 0.5度)
-    const hAngle = (currentH % 12) * 30 + (currentM * 0.5);
-
-    minuteHand.setAttribute('transform', `rotate(${mAngle}, 50, 50)`);
-    hourHand.setAttribute('transform', `rotate(${hAngle}, 50, 50)`);
-    
-    checkAnswer();
-}
-
-function handleDrag(e) {
-    const rect = document.getElementById('clock-svg').getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    
-    const x = clientX - (rect.left + rect.width / 2);
-    const y = clientY - (rect.top + rect.height / 2);
-    
-    let angle = Math.atan2(y, x) * (180 / Math.PI) + 90;
-    if (angle < 0) angle += 360;
-
-    if (this === minuteHand) {
-        let newM = Math.round(angle / 6) % 60;
+        const clockFace = document.getElementById('clock-face');
+        const hourHand = document.getElementById('hour-hand');
+        const minuteHand = document.getElementById('minute-hand');
+        const feedback = document.getElementById('feedback');
+        const targetDisplay = document.getElementById('target-time');
         
-        // 偵測分針是否跨越 12 點 (從 59 到 0 或 0 到 59)
-        if (currentM === 59 && newM === 0) {
-            currentH = (currentH % 12) + 1;
-        } else if (currentM === 0 && newM === 59) {
-            currentH = (currentH - 1 <= 0) ? 12 : currentH - 1;
-        }
-        currentM = newM;
-    } else {
-        // 拖動時針時，直接改變小時與分鐘的大略位置
-        currentH = Math.floor(angle / 30) || 12;
-        currentM = Math.round((angle % 30) * 2); 
-    }
-    
-    updateClockDisplay();
-}
+        let currentH = 12; 
+        let currentM = 0;  
+        let targetH = 0, targetM = 0;
 
-// 事件綁定 (保持不變)
-function setupEvents(hand) {
-    const startDrag = (e) => {
-        e.preventDefault();
-        const onMove = handleDrag.bind(hand);
-        window.addEventListener('mousemove', onMove);
-        window.addEventListener('touchmove', onMove);
-        const stopDrag = () => {
-            window.removeEventListener('mousemove', onMove);
-            window.removeEventListener('touchmove', onMove);
-        };
-        window.addEventListener('mouseup', stopDrag, { once: true });
-        window.addEventListener('touchend', stopDrag, { once: true });
-    };
-    hand.addEventListener('mousedown', startDrag);
-    hand.addEventListener('touchstart', startDrag);
-}
-
-function generateTask() {
-    const h = Math.floor(Math.random() * 12) || 12;
-    const m = [0, 5, 10, 15, 20, 30, 45, 50, 55][Math.floor(Math.random() * 9)];
-    targetTotalMinutes = (h % 12) * 60 + m;
-    document.getElementById('target-time').innerText = `請調整到：${h}:${m.toString().padStart(2, '0')}`;
-    feedback.innerText = "";
-}
-
-function checkAnswer() {
-    let currentTotal = (currentH % 12) * 60 + currentM;
-    if (currentTotal === targetTotalMinutes) {
-        feedback.innerText = "🌟 太棒了！答對了！";
-        feedback.style.color = "#27ae60";
-    }
-}
-
-initClockFace();
-setupEvents(minuteHand);
-setupEvents(hourHand);
-generateTask();
-updateClockDisplay();
-    </script>
-</body>
-</html>
+        function initClockFace() {
+            clockFace.innerHTML = '';
+            for (let i = 1; i <= 60; i++) {
+                const angle = (i * 6) * (Math.PI /
